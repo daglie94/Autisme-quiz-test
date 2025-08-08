@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="nb">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Avansert Autisme‑quiz (standalone)</title>
+  <meta name="description" content="Interaktiv læringsquiz om autisme. Ikke diagnostisk." />
+  <style>
+    :root{
+      --bg: #f7f8fb;
+      --card: #ffffff;
+      --muted: #6b7280;
+      --text: #0f172a;
+      --primary: #2563eb;
+      --primary-600: #1d4ed8;
+      --green: #16a34a;
+      --red: #dc2626;
+      --ring: rgba(37,99,235,.35);
+      --shadow: 0 10px 20px rgba(2,6,23,.06), 0 2px 6px rgba(2,6,23,.08);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 0% 0%, #ffffff, var(--bg));
+    }
+    .container{max-width:1100px;margin:0 auto;padding:20px 16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .brand{display:flex;gap:10px;align-items:center}
+    .brand .logo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--primary),#60a5fa)}
+    .brand h1{font-size:1.6rem;margin:0;font-weight:800;letter-spacing:.2px}
+    .brand p{margin:0;color:var(--muted);font-size:.9rem}
+    .toggles{display:flex;align-items:center;gap:16px}
+    .toggle{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem}
+    .switch{appearance:none;width:42px;height:24px;border-radius:999px;background:#e5e7eb;position:relative;outline:none;cursor:pointer;transition:.2s}
+    .switch:checked{background:var(--primary)}
+    .switch:before{content:\"\";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;transition:.2s}
+    .switch:checked:before{transform:translateX(18px)}
+    .card{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);box-shadow:var(--shadow);}
+    .card h2{margin:0 0 6px 0;font-size:1.05rem}
+    .card .sub{color:var(--muted);font-size:.85rem}
+    .card .body{padding:16px}
+    .card .head{padding:16px 16px 8px 16px;border-bottom:1px solid #f1f5f9}
+    .progress{height:8px;background:#eef2f7;border-radius:999px;overflow:hidden}
+    .progress>span{display:block;height:100%;background:linear-gradient(90deg,var(--primary),#60a5fa);width:0%}
+    .prompt{font-weight:600;font-size:1.1rem}
+    .options{display:grid;gap:10px;margin-top:8px}
+    .btn{
+      appearance:none;border:1px solid #e5e7eb;background:#fff;border-radius:12px;
+      padding:12px 14px;text-align:left;cursor:pointer;font:inherit;display:flex;justify-content:space-between;align-items:center;
+      transition:border-color .15s, box-shadow .15s, transform .03s;
+    }
+    .btn:hover{border-color:#d1d5db}
+    .btn:active{transform:translateY(1px)}
+    .btn.selected{border-color:var(--primary);box-shadow:0 0 0 4px var(--ring)}
+    .btn.correct{border-color:var(--green)}
+    .btn.wrong{border-color:var(--red)}
+    .hint,.explain{border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;background:#f9fafb}
+    .hint .ttl,.explain .ttl{font-weight:700;margin-bottom:6px;font-size:.95rem}
+    .toolbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:8px}
+    .controls{display:flex;gap:8px;align-items:center}
+    .pill{appearance:none;border:1px solid #e5e7eb;background:white;border-radius:12px;padding:10px 14px;cursor:pointer;font:inherit}
+    .pill[disabled]{opacity:.5;cursor:not-allowed}
+    .pill.primary{background:var(--primary);color:white;border-color:var(--primary)}
+    .pill.ghost{background:transparent}
+    .badge{display:inline-flex;gap:6px;align-items:center;font-size:.75rem;color:#334155;background:#f1f5f9;border:1px solid #e5e7eb;border-radius:999px;padding:4px 10px}
+    .overview{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+    @media (max-width:720px){.overview{grid-template-columns:repeat(3,minmax(0,1fr));}}
+    .mini{height:36px;border-radius:10px;border:1px solid #e5e7eb;background:white;cursor:pointer}
+    .mini.active{border-color:var(--primary)}
+    .mini.answered{background:#f8fafc}
+    .mini.correct{border-color:var(--green)}
+    .flag{font-size:.75rem;background:#fff4; border:1px dashed #f59e0b; padding:2px 6px;border-radius:999px;color:#92400e}
+    .sep{height:1px;background:#eef2f7;margin:6px 0 12px}
+    .note{color:var(--muted);font-size:.95rem}
+    .grid{display:grid;gap:12px}
+    .result-grid{display:grid;gap:12px}
+    .chart{width:100%;height:260px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .focus-mode body, .focus{background:white!important}
+    .range-wrap{display:grid;gap:6px}
+    .range-row{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem}
+    input[type=range]{width:100%}
+    footer{color:#94a3b8;font-size:.8rem;text-align:center;padding:16px}
+  </style>
+</head>
+<body>
+  <div class="container" id="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Avansert Autisme‑quiz</h1>
+          <p>Læringsorientert • Ikke diagnostisk</p>
+        </div>
+      </div>
+      <div class="toggles">
+        <label class="toggle" title="Skjul pynt for mer fokus">
+          Fokusmodus
+          <input id="toggleFocus" type="checkbox" class="switch" />
+        </label>
+        <label class="toggle" title="Vis/Skjul hint før innlevering">
+          Hint
+          <input id="toggleHints" type="checkbox" class="switch" checked />
+        </label>
+      </div>
+    </header>
+
+    <section class="card" aria-live="polite">
+      <div class="head">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div>
+            <h2 id="qTitle">Spørsmål</h2>
+            <div class="sub" id="qMeta">Tema: –</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge" id="scoreBadge" title="Poeng"></span>
+            <span class="badge" id="tagBadge"></span>
+          </div>
+        </div>
+        <div class="progress" aria-label="Fremdrift"><span id="progressBar" style="width:0%"></span></div>
+      </div>
+      <div class="body grid">
+        <div class="prompt" id="prompt"></div>
+        <div id="options" class="options"></div>
+
+        <div class="grid" id="auxBlocks"></div>
+
+        <div class="toolbar">
+          <div class="controls">
+            <button class="pill" id="prevBtn">Forrige</button>
+            <button class="pill" id="nextBtn">Neste</button>
+            <button class="pill ghost" id="flagBtn" title="Marker for senere">Marker</button>
+          </div>
+          <div class="controls">
+            <button class="pill primary" id="submitBtn">Lever</button>
+            <button class="pill" id="reviewBtn" style="display:none">Review‑modus</button>
+            <button class="pill" id="onlyIncorrectBtn" style="display:none">Vis bare feil</button>
+            <button class="pill" id="restartBtn" style="display:none">Start på nytt</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:14px">
+      <div class="head">
+        <h2 class="sub" style="font-weight:700">Oversikt</h2>
+        <div class="sub">Klikk for å hoppe til spørsmål</div>
+      </div>
+      <div class="body">
+        <div class="overview" id="overview"></div>
+      </div>
+    </section>
+
+    <section class="card" id="resultsCard" style="margin-top:14px;display:none">
+      <div class="head">
+        <h2>Resultater</h2>
+        <div class="sub">Din poengsum og temaer å dypdykke i</div>
+      </div>
+      <div class="body result-grid">
+        <div id="scoreLine" style="font-size:1.2rem;font-weight:700"></div>
+        <div class="sep"></div>
+        <div class="chart" id="chart" role="img" aria-label="Riktige svar per tema"></div>
+        <div class="hint">
+          <div class="ttl">Merk</div>
+          <div class="note">Denne quizen måler bare kunnskap om autisme og støtte/tilrettelegging. Den sier ingenting om diagnose.</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>✦ Standalone, ingen rammeverk. Fremdrift lagres lokalt i nettleseren.</footer>
+  </div>
+
+<script>
+(function(){
+  const STORAGE_KEY = "autisme-quiz-standalone-v1";
+
+  /** ---------- Spørsmål ---------- */
+  const QUESTION_BANK = [
+    { id:"q1", type:"single", prompt:"Hvilken påstand beskriver autisme best?",
+      options:[
+        {id:"a",label:"En psykisk sykdom som kan kureres"},
+        {id:"b",label:"En nevroåpenbaring utløst av dårlig oppdragelse"},
+        {id:"c",label:"En nevro-utviklingsvariasjon med forskjeller i kommunikasjon, sosialt samspill og sanseprofil"},
+        {id:"d",label:"Bare sjenanse"},
+      ],
+      correct:["c"], tags:["grunnleggende","myter"],
+      explanation:"Autisme er en nevro-utviklingsvariasjon. Det er ikke en sykdom som skal kureres, men mange kan ha behov for tilrettelegging og støtte.",
+      hint:"Tenk utvikling og variasjon, ikke sykdom."
+    },
+    { id:"q2", type:"multi", prompt:"Hvilke av disse kan være vanlige sanseutfordringer hos autister? (Velg alle som passer)",
+      options:[
+        {id:"a",label:"Lyd kan oppleves svært intens"},
+        {id:"b",label:"Berøring kan være ubehagelig eller smertefull"},
+        {id:"c",label:"Lukt/smak kan oppleves svakere enn hos andre"},
+        {id:"d",label:"Ingen sanseforskjeller forekommer"},
+      ],
+      correct:["a","b","c"], tags:["sanser"],
+      explanation:"Mange autister har sanseprofil med både over- og underfølsomhet. Det varierer fra person til person.",
+      hint:"Tenk både over- og underfølsomhet."
+    },
+    { id:"q3", type:"scenario", prompt:"Du skal ha et møte med en autist kollega som virker stresset i åpne kontorlandskap. Hva er BESTE første tiltak?",
+      options:[
+        {id:"a",label:"Snakk høyere for å få oppmerksomhet"},
+        {id:"b",label:"Foreslå et roligere møterom og tilby skriftlig agenda"},
+        {id:"c",label:"Ignorer stresset, det går over"},
+        {id:"d",label:"Krev øyekontakt hele tiden"},
+      ],
+      correct:["b"], tags:["arbeid","tilrettelegging","kommunikasjon"],
+      explanation:"Tilrettelegging for mindre sansebelastning og forutsigbarhet (skriftlig agenda) hjelper ofte."
+    },
+    { id:"q4", type:"single", prompt:"Hva beskriver begrepet 'maskering' i autisme-sammenheng?",
+      options:[
+        {id:"a",label:"Å bruke munnbind for å unngå smitte"},
+        {id:"b",label:"Å skjule eller undertrykke autistiske trekk for å passe inn"},
+        {id:"c",label:"Å trene på sosiale ferdigheter via rollespill"},
+        {id:"d",label:"Å skjule følelser med humor"},
+      ],
+      correct:["b"], tags:["psykisk helse","kommunikasjon"],
+      explanation:"Maskering kan være energitappende og øke risiko for utmattelse og psykiske plager."
+    },
+    { id:"q5", type:"multi", prompt:"Hva kan være gode kommunikasjons-tilpasninger? (Velg alle som passer)",
+      options:[
+        {id:"a",label:"Vær konkret og unngå vage uttrykk"},
+        {id:"b",label:"Gi tid til å svare uten avbrytelser"},
+        {id:"c",label:"Bruk sarkasme og ironi for å løsne stemningen"},
+        {id:"d",label:"Tilby informasjon skriftlig i tillegg til muntlig"},
+      ],
+      correct:["a","b","d"], tags:["kommunikasjon"],
+      explanation:"Konkret språk, responstid og skriftlighet øker forutsigbarheten. Sarkasme kan misforstås."
+    },
+    { id:"q6", type:"scale", prompt:"Hvor komfortabel er du med å bruke støyreduserende hjelpemidler (f.eks. hodetelefoner) i sosiale settinger?",
+      scale:{min:1,max:5,leftLabel:"Ikke komfortabel",rightLabel:"Svært komfortabel",step:1},
+      tags:["refleksjon","sanser"],
+      explanation:"Skala-spørsmål gir selvinnsikt. Det finnes ikke 'riktige' svar her."
+    },
+    { id:"q7", type:"scenario", prompt:"En elev med autisme blir stille og trekker seg under gruppearbeid. Hva gjør du?",
+      options:[
+        {id:"a",label:"Tving eleven til å presentere for klassen"},
+        {id:"b",label:"Tilby alternative uttrykksformer (skriftlig, mindre gruppe) og tydelig rolle"},
+        {id:"c",label:"Ignorer det – det er normalt i puberteten"},
+        {id:"d",label:"Gi negativ oppmerksomhet for å motivere"},
+      ],
+      correct:["b"], tags:["skole","tilrettelegging","kommunikasjon"],
+      explanation:"Fleksibilitet og forutsigbarhet kan redusere belastning og øke deltakelse."
+    },
+    { id:"q8", type:"single", prompt:"Hva betyr 'monotropi' i autismeforskning?",
+      options:[
+        {id:"a",label:"At autister alltid har ett talent"},
+        {id:"b",label:"At oppmerksomheten tenderer mot dyp fokus på færre interesser av gangen"},
+        {id:"c",label:"At man ikke kan multitaske i det hele tatt"},
+        {id:"d",label:"At man har perfekt hukommelse"},
+      ],
+      correct:["b"], tags:["teori"],
+      explanation:"Monotropi beskriver en oppmerksomhetsstil som favoriserer dypdykk fremfor bredde."
+    },
+    { id:"q9", type:"multi", prompt:"Hva er gode strategier for møter? (Velg alle som passer)",
+      options:[
+        {id:"a",label:"Send agenda i forkant"},
+        {id:"b",label:"Tillat kamera av i digitale møter"},
+        {id:"c",label:"Planlegg overtid uten å informere"},
+        {id:"d",label:"Tilby pauser og tydelig tidsramme"},
+      ],
+      correct:["a","b","d"], tags:["arbeid","tilrettelegging"],
+      explanation:"Forutsigbarhet, valg og pauser reduserer kognitiv belastning."
+    },
+    { id:"q10", type:"single", prompt:"Hva er riktig om kjønnsfordeling og autisme?",
+      options:[
+        {id:"a",label:"Bare gutter kan være autister"},
+        {id:"b",label:"Autisme finnes hos alle kjønn; historisk underdiagnostisering av jenter/kvinner og ikke-binære"},
+        {id:"c",label:"Kvinner blir alltid diagnostisert tidligere"},
+        {id:"d",label:"Autisme forsvinner i voksen alder"},
+      ],
+      correct:["b"], tags:["likestilling","diagnose"],
+      explanation:"Forskning og erfaring viser bred kjønnsfordeling og risiko for underdiagnostisering utenfor tradisjonelle profiler."
+    },
+    { id:"q11", type:"scenario", prompt:"En venn avlyser ofte avtaler i siste liten pga. 'null energi'. Hva er en støttende respons?",
+      options:[
+        {id:"a",label:"Si at de må skjerpe seg"},
+        {id:"b",label:"Foreslå lav-energi aktivitet, tilby fleksibilitet og spør hva som hjelper"},
+        {id:"c",label:"Kutte kontakt"},
+        {id:"d",label:"Overøse med sanseinntrykk for å peppe opp"},
+      ],
+      correct:["b"], tags:["vennskap","energi","støtte"],
+      explanation:"Energiøkonomi varierer. Fleksible, lavbelastende løsninger kan gjøre relasjonen tryggere."
+    },
+    { id:"q12", type:"multi", prompt:"Hva kan være tegn på autistisk utmattelse (autistic burnout)? (Velg alle som passer)",
+      options:[
+        {id:"a",label:"Redusert toleranse for sanseinntrykk"},
+        {id:"b",label:"Økt behov for rutiner og hvile"},
+        {id:"c",label:"Permanent helbredelse fra autisme"},
+        {id:"d",label:"Problemer med eksekutive funksjoner (planlegging, igangsetting)"},
+      ],
+      correct:["a","b","d"], tags:["psykisk helse","energi"],
+      explanation:"Burnout er ikke 'å bli frisk', men et tegn på langvarig belastning. Avlastning og støtte er viktige tiltak."
+    },
+  ];
+
+  /** ---------- Utils ---------- */
+  const $ = (sel,root=document)=>root.querySelector(sel);
+  const $$ = (sel,root=document)=>Array.from(root.querySelectorAll(sel));
+  const shuffle = (arr) => {
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]];}
+    return a;
+  };
+  const arraysEqual = (a,b) => {
+    if(!a||!b) return false;
+    if(a.length!==b.length) return false;
+    const as=[...a].sort(); const bs=[...b].sort();
+    return as.every((v,i)=>v===bs[i]);
+  };
+
+  /** ---------- State ---------- */
+  let state = {
+    questions: shuffle(QUESTION_BANK),
+    index: 0,
+    answers: {},             // id -> string[] | number
+    flagged: [],             // ids
+    showHints: true,
+    focusMode: false,
+    submitted: false,
+    reviewMode: false,
+    onlyIncorrect: false,
+  };
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(parsed && parsed.questions && parsed.answers){
+          state = {...state, ...parsed};
+        }
+      }
+    }catch(e){}
+  }
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  /** ---------- Derived ---------- */
+  const gradable = () => state.questions.filter(q=>q.type!=="scale");
+  const score = () => {
+    let s=0;
+    for(const q of state.questions){
+      if(q.type==="scale") continue;
+      const ans = state.answers[q.id];
+      if(!ans) continue;
+      if((q.type==="single"||q.type==="scenario") && Array.isArray(ans) && q.correct && ans[0]===q.correct[0]) s+=1;
+      if(q.type==="multi" && Array.isArray(ans) && arraysEqual(ans, q.correct||[])) s+=1;
+    }
+    return s;
+  };
+  const incorrectSet = () => {
+    const set = new Set();
+    for(const q of state.questions){
+      if(q.type==="scale") continue; // ikke gradert
+      const ans = state.answers[q.id];
+      if(!ans){ set.add(q.id); continue; }
+      if((q.type==="single"||q.type==="scenario") && Array.isArray(ans)){
+        if(!q.correct || q.correct[0]!==ans[0]) set.add(q.id);
+      } else if(q.type==="multi" && Array.isArray(ans)){
+        if(!arraysEqual(ans, q.correct||[])) set.add(q.id);
+      }
+    }
+    return set;
+  };
+  const visibleIndices = () => {
+    if(!(state.reviewMode && state.onlyIncorrect)) return state.questions.map((_,i)=>i);
+    const inc = incorrectSet();
+    return state.questions.map((q,i)=>[q,i]).filter(([q])=>q.type!=="scale" && inc.has(q.id)).map(([,i])=>i);
+  };
+  const nextVisibleIndex = () => {
+    const vis = visibleIndices();
+    const current = state.index;
+    for(const i of vis){
+      if(i>current) return i;
+    }
+    return null;
+  };
+  const prevVisibleIndex = () => {
+    const vis = visibleIndices().slice().reverse();
+    const current = state.index;
+    for(const i of vis){
+      if(i<current) return i;
+    }
+    return null;
+  };
+
+  /** ---------- Render ---------- */
+  function render(){
+    document.body.style.background = state.focusMode ? "#fff" : "radial-gradient(1200px 800px at 0% 0%, #ffffff, var(--bg))";
+    $("#toggleHints").checked = !!state.showHints;
+    $("#toggleFocus").checked = !!state.focusMode;
+
+    const q = state.questions[state.index];
+    $("#qTitle").textContent = `Spørsmål ${state.index+1} av ${state.questions.length}`;
+    $("#qMeta").textContent = `Tema: ${q.tags?.join(", ") || "–"}`;
+    $("#tagBadge").textContent = q.tags?.join(", ") || "–";
+    $("#scoreBadge").textContent = state.submitted ? `Poeng: ${score()} / ${gradable().length}` : "Ubesvart";
+    $("#progressBar").style.width = `${((state.index+1)/state.questions.length)*100}%`;
+
+    $("#prompt").textContent = q.prompt;
+    const optionsEl = $("#options");
+    optionsEl.innerHTML = "";
+
+    const aux = $("#auxBlocks");
+    aux.innerHTML = "";
+
+    if(q.type==="scale"){
+      const wrap = document.createElement("div");
+      wrap.className = "range-wrap";
+      const row = document.createElement("div");
+      row.className = "range-row";
+      row.innerHTML = `<span>${q.scale?.leftLabel||""}</span><span>${q.scale?.rightLabel||""}</span>`;
+      const input = document.createElement("input");
+      input.type = "range";
+      input.min = q.scale?.min ?? 1;
+      input.max = q.scale?.max ?? 5;
+      input.step = q.scale?.step ?? 1;
+      input.value = (typeof state.answers[q.id]==="number") ? state.answers[q.id] : (q.scale?.min ?? 1);
+      input.addEventListener("input", e=>{
+        state.answers[q.id] = Number(input.value);
+        save();
+      });
+      const sel = document.createElement("div");
+      sel.className="sub";
+      sel.textContent = `Valgt: ${typeof state.answers[q.id]==="number" ? state.answers[q.id] : "–"}`;
+      input.addEventListener("input", ()=>{ sel.textContent = `Valgt: ${state.answers[q.id]}`; });
+      wrap.append(row,input,sel);
+      optionsEl.append(wrap);
+    } else {
+      for(const opt of q.options || []){
+        const btn = document.createElement("button");
+        btn.className = "btn";
+        btn.setAttribute("type","button");
+        btn.setAttribute("aria-pressed","false");
+        btn.textContent = opt.label;
+
+        // selected?
+        const current = state.answers[q.id];
+        const selected = Array.isArray(current) && (q.type==="multi" ? current.includes(opt.id) : (current[0]===opt.id));
+        if(selected){ btn.classList.add("selected"); btn.setAttribute("aria-pressed","true"); }
+
+        // grading visuals
+        if(state.submitted){
+          const isCorrect = (q.correct||[]).includes(opt.id);
+          const isWrongSelection = selected && !isCorrect;
+          if(isCorrect) btn.classList.add("correct");
+          if(isWrongSelection) btn.classList.add("wrong");
+          const icon = document.createElement("span");
+          icon.setAttribute("aria-hidden","true");
+          icon.style.marginLeft = "8px";
+          icon.textContent = isCorrect ? "✓" : (isWrongSelection ? "✗" : "");
+          const wrap = document.createElement("span");
+          wrap.style.display="flex";wrap.style.gap="8px";wrap.style.alignItems="center";wrap.style.width="100%";wrap.style.justifyContent="space-between";
+          const lbl = document.createElement("span"); lbl.textContent = opt.label;
+          wrap.append(lbl, icon);
+          btn.textContent = "";
+          btn.append(wrap);
+        }
+
+        btn.addEventListener("click", ()=>{
+          const cur = state.answers[q.id];
+          if(q.type==="single" || q.type==="scenario"){
+            state.answers[q.id] = [opt.id];
+          } else if(q.type==="multi"){
+            const arr = Array.isArray(cur) ? cur.slice() : [];
+            const i = arr.indexOf(opt.id);
+            if(i>=0) arr.splice(i,1); else arr.push(opt.id);
+            state.answers[q.id] = arr;
+          }
+          save();
+          render();
+        });
+
+        optionsEl.append(btn);
+      }
+    }
+
+    // hint / explanation blocks
+    if(state.showHints && q.hint && !state.submitted){
+      const hint = document.createElement("div");
+      hint.className = "hint";
+      hint.innerHTML = `<div class="ttl">Hint</div><div>${q.hint}</div>`;
+      aux.append(hint);
+    }
+    if(state.submitted && q.explanation){
+      const exp = document.createElement("div");
+      exp.className = "explain";
+      exp.innerHTML = `<div class="ttl">Forklaring</div><div>${q.explanation}</div>`;
+      aux.append(exp);
+    }
+
+    // toolbar buttons
+    const prevI = prevVisibleIndex();
+    const nextI = nextVisibleIndex();
+    $("#prevBtn").disabled = (prevI===null);
+    $("#nextBtn").disabled = (nextI===null);
+    $("#flagBtn").textContent = (state.flagged.includes(q.id) ? "Fjern markering" : "Marker");
+    $("#reviewBtn").style.display = state.submitted ? "inline-block" : "none";
+    $("#onlyIncorrectBtn").style.display = (state.submitted && state.reviewMode) ? "inline-block" : "none";
+    $("#restartBtn").style.display = state.submitted ? "inline-block" : "none";
+    $("#reviewBtn").textContent = state.reviewMode ? "Quiz‑modus" : "Review‑modus";
+    $("#onlyIncorrectBtn").textContent = state.onlyIncorrect ? "Vis alle" : "Vis bare feil";
+
+    // overview
+    const ov = $("#overview");
+    ov.innerHTML = "";
+    const vis = new Set(visibleIndices());
+    state.questions.forEach((qq, i)=>{
+      if(state.reviewMode && state.onlyIncorrect && !vis.has(i)) return; // skjul
+      const b = document.createElement("button");
+      b.className = "mini";
+      if(i===state.index) b.classList.add("active");
+      const ans = state.answers[qq.id];
+      const answered = typeof ans==="number" || (Array.isArray(ans) && ans.length>0);
+      if(answered) b.classList.add("answered");
+      if(state.submitted && qq.type!=="scale"){
+        const correct = (qq.type==="multi")
+          ? (Array.isArray(ans) && arraysEqual(ans, qq.correct||[]))
+          : (Array.isArray(ans) && (qq.correct?.[0]===ans[0]));
+        if(correct) b.classList.add("correct");
+      }
+      b.textContent = (i+1);
+      if(state.flagged.includes(qq.id)) {
+        const f = document.createElement("span"); f.className="flag"; f.textContent="★"; f.style.marginLeft="6px";
+        const wrap = document.createElement("div"); wrap.style.display="flex"; wrap.style.justifyContent="center"; wrap.style.alignItems="center"; wrap.style.gap="6px";
+        const num = document.createElement("span"); num.textContent=String(i+1);
+        wrap.append(num,f); b.textContent=""; b.append(wrap);
+      }
+      b.addEventListener("click", ()=>{ state.index=i; save(); render(); });
+      ov.append(b);
+    });
+
+    // results
+    const showResults = state.submitted;
+    $("#resultsCard").style.display = showResults ? "block" : "none";
+    if(showResults){
+      const sc = score();
+      const max = gradable().length;
+      $("#scoreLine").textContent = `${sc} / ${max} poeng`;
+      drawChart("#chart", aggregateByTag());
+    }
+  }
+
+  /** ---------- Actions ---------- */
+  function aggregateByTag(){
+    const buckets = {};
+    for(const q of state.questions){
+      const tags = q.tags && q.tags.length ? q.tags : ["Uten tag"];
+      for(const t of tags){
+        if(!buckets[t]) buckets[t] = {tag:t, riktig:0, total:0};
+        if(q.type!=="scale") buckets[t].total += 1;
+        const ans = state.answers[q.id];
+        if(!ans || q.type==="scale") continue;
+        if((q.type==="single"||q.type==="scenario") && Array.isArray(ans) && q.correct?.[0]===ans[0]) buckets[t].riktig += 1;
+        if(q.type==="multi" && Array.isArray(ans) && arraysEqual(ans, q.correct||[])) buckets[t].riktig += 1;
+      }
+    }
+    return Object.values(buckets).sort((a,b)=>a.tag.localeCompare(b.tag));
+  }
+
+  function drawChart(sel, data){
+    const root = $(sel);
+    root.innerHTML = "";
+    const w = root.clientWidth || 600;
+    const h = root.clientHeight || 260;
+    const pad = {t:16,r:16,b:38,l:28};
+    const innerW = w - pad.l - pad.r;
+    const innerH = h - pad.t - pad.b;
+    const maxY = Math.max(1, ...data.map(d=>d.total));
+    const barW = data.length ? innerW / data.length * 0.7 : 0;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", w);
+    svg.setAttribute("height", h);
+
+    // axes
+    const axis = document.createElementNS(svgNS,"g");
+    const xline = document.createElementNS(svgNS,"line");
+    xline.setAttribute("x1", pad.l); xline.setAttribute("y1", h-pad.b);
+    xline.setAttribute("x2", w-pad.r); xline.setAttribute("y2", h-pad.b);
+    xline.setAttribute("stroke", "#e5e7eb"); axis.appendChild(xline);
+
+    // y ticks
+    for(let y=0;y<=maxY;y++){
+      const yy = pad.t + innerH - (y/maxY)*innerH;
+      const ln = document.createElementNS(svgNS,"line");
+      ln.setAttribute("x1", pad.l); ln.setAttribute("y1", yy);
+      ln.setAttribute("x2", w-pad.r); ln.setAttribute("y2", yy);
+      ln.setAttribute("stroke", y===0?"#e5e7eb":"#f1f5f9");
+      ln.setAttribute("stroke-width","1");
+      axis.appendChild(ln);
+
+      const lbl = document.createElementNS(svgNS,"text");
+      lbl.setAttribute("x", pad.l - 6);
+      lbl.setAttribute("y", yy+4);
+      lbl.setAttribute("text-anchor","end");
+      lbl.setAttribute("font-size","10");
+      lbl.setAttribute("fill","#64748b");
+      lbl.textContent = y;
+      axis.appendChild(lbl);
+    }
+    svg.appendChild(axis);
+
+    // bars + labels
+    data.forEach((d,i)=>{
+      const x = pad.l + (i+0.5) * (innerW / data.length) - barW/2;
+      const bh = innerH * (d.riktig / (d.total||1));
+      const y = pad.t + innerH - bh;
+
+      const rectBg = document.createElementNS(svgNS,"rect");
+      rectBg.setAttribute("x", x);
+      rectBg.setAttribute("y", pad.t);
+      rectBg.setAttribute("width", barW);
+      rectBg.setAttribute("height", innerH);
+      rectBg.setAttribute("fill", "#f8fafc");
+      rectBg.setAttribute("stroke", "#e5e7eb");
+      rectBg.setAttribute("rx", "6");
+      svg.appendChild(rectBg);
+
+      const rect = document.createElementNS(svgNS,"rect");
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", y);
+      rect.setAttribute("width", barW);
+      rect.setAttribute("height", bh);
+      rect.setAttribute("fill", "url(#grad)");
+      rect.setAttribute("rx", "6");
+      svg.appendChild(rect);
+
+      const pct = Math.round( (d.riktig / (d.total||1)) * 100 );
+      const tl = document.createElementNS(svgNS,"text");
+      tl.setAttribute("x", x + barW/2);
+      tl.setAttribute("y", y - 6);
+      tl.setAttribute("text-anchor","middle");
+      tl.setAttribute("font-size","11");
+      tl.setAttribute("fill","#0f172a");
+      tl.textContent = `${pct}%`;
+      svg.appendChild(tl);
+
+      const xl = document.createElementNS(svgNS,"text");
+      xl.setAttribute("x", x + barW/2);
+      xl.setAttribute("y", h - 16);
+      xl.setAttribute("text-anchor","middle");
+      xl.setAttribute("font-size","10");
+      xl.setAttribute("fill","#64748b");
+      xl.textContent = d.tag;
+      svg.appendChild(xl);
+    });
+
+    // gradient
+    const defs = document.createElementNS(svgNS,"defs");
+    const grad = document.createElementNS(svgNS,"linearGradient");
+    grad.setAttribute("id","grad");
+    grad.setAttribute("x1","0"); grad.setAttribute("x2","0"); grad.setAttribute("y1","0"); grad.setAttribute("y2","1");
+    const s1 = document.createElementNS(svgNS,"stop"); s1.setAttribute("offset","0%"); s1.setAttribute("stop-color","#2563eb");
+    const s2 = document.createElementNS(svgNS,"stop"); s2.setAttribute("offset","100%"); s2.setAttribute("stop-color","#60a5fa");
+    grad.append(s1,s2); defs.appendChild(grad); svg.appendChild(defs);
+
+    root.appendChild(svg);
+  }
+
+  /** ---------- Event wiring ---------- */
+  $("#prevBtn").addEventListener("click", ()=>{
+    const p = prevVisibleIndex();
+    if(p!==null){ state.index = p; save(); render(); }
+  });
+  $("#nextBtn").addEventListener("click", ()=>{
+    const n = nextVisibleIndex();
+    if(n!==null){ state.index = n; save(); render(); }
+  });
+  $("#flagBtn").addEventListener("click", ()=>{
+    const q = state.questions[state.index];
+    const i = state.flagged.indexOf(q.id);
+    if(i>=0) state.flagged.splice(i,1); else state.flagged.push(q.id);
+    save(); render();
+  });
+  $("#submitBtn").addEventListener("click", ()=>{
+    state.submitted = true;
+    state.reviewMode = true;
+    save(); render();
+  });
+  $("#reviewBtn").addEventListener("click", ()=>{
+    state.reviewMode = !state.reviewMode;
+    if(!state.reviewMode) state.onlyIncorrect = false;
+    save(); render();
+  });
+  $("#onlyIncorrectBtn").addEventListener("click", ()=>{
+    state.onlyIncorrect = !state.onlyIncorrect;
+    save(); render();
+  });
+  $("#restartBtn").addEventListener("click", ()=>{
+    state.answers = {};
+    state.flagged = [];
+    state.submitted = false;
+    state.reviewMode = false;
+    state.onlyIncorrect = false;
+    state.questions = shuffle(QUESTION_BANK);
+    state.index = 0;
+    save(); render();
+  });
+  $("#toggleHints").addEventListener("change", (e)=>{
+    state.showHints = e.target.checked;
+    save(); render();
+  });
+  $("#toggleFocus").addEventListener("change", (e)=>{
+    state.focusMode = e.target.checked;
+    save(); render();
+  });
+
+  // init
+  load();
+  render();
+})();
+</script>
+</body>
+</html>
